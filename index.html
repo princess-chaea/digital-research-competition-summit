@@ -362,16 +362,18 @@
 
                     return `
                         <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
-                            <td class="p-1 border text-center text-gray-600 font-bold text-[11px]">${r.id}</td>
-                            <td class="p-1 border text-center text-[10px] leading-tight">${cities.join('<br>')}</td>
-                            <td class="p-1 border text-center text-[10px] leading-tight">${r.category} (${r.schoolLevel})</td>
-                            <td class="p-1 border font-semibold text-gray-800 text-[11px] leading-tight">
+                            <td class="px-1 py-0.5 border text-center text-gray-600 font-bold text-[11px]">${r.id}</td>
+                            <td class="px-1 py-0.5 border text-center text-[10px] leading-[1] text-gray-500">${cities.map(c => `<div>${c}</div>`).join('')}</td>
+                            <td class="px-1 py-0.5 border text-center text-[10px] leading-[1]">${r.category}<br>(${r.schoolLevel})</td>
+                            <td class="px-1 py-0.5 border font-semibold text-gray-800 text-[11px] leading-tight">
                                 ${r.topic}
                             </td>
-                            <td class="p-1 border">${nameSchoolHTML}</td>
-                            <td class="p-1 border text-center flex flex-col items-center justify-center min-h-[40px] gap-0.5">
-                                <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[10px] hover:underline">수정</button>
-                                <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[10px] hover:underline">삭제</button>
+                            <td class="px-1 py-0.5 border">${nameSchoolHTML}</td>
+                            <td class="px-1 py-0.5 border text-center">
+                                <div class="flex flex-col items-center justify-center gap-0.5">
+                                    <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[10px] hover:underline leading-none">수정</button>
+                                    <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[10px] hover:underline leading-none">삭제</button>
+                                </div>
                             </td>
                         </tr>
                     `;
