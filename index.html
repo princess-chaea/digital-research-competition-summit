@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 제20회 디지털교육연구대회 신청</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .form-container {
+            max-width: 950px;
+            margin: 2rem auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .participant-card {
+            border: 1px solid #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            background: #f9fafb;
+            position: relative;
+        }
+
+        .btn-add {
+            background-color: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-add:hover {
+            background-color: #059669;
+        }
+
+        .btn-remove {
+            background-color: #ef4444;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .mandatory::after {
+            content: ' *';
+            color: #ef4444;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 2rem;
+            border-top: 2px solid #e5e7eb;
+            padding-top: 2rem;
+        }
+
+        td {
+            white-space: pre-line;
+            word-break: break-all;
+        }
+
+        /* 모달 스타일 */
+        .modal-overlay {
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-content {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+
+<body class="p-4">
+    <div class="form-container">
+        <h1 class="text-2xl font-bold text-center mb-1">2026년 제20회 디지털교육연구대회</h1>
+        <h2 class="text-xl font-semibold text-center text-blue-600 mb-2">도대회 참가 신청서</h2>
+        <p class="text-red-600 font-bold text-center mb-8 text-lg animate-pulse">
+            ※ 2026. 4. 22.(수)까지 입력 완료해 주세요.
+        </p>
+
+        <form id="entryForm" onsubmit="handleFormSubmit(this)">
+            <input type="hidden" name="editRowNum" id="editRowNum">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block font-bold mb-1 mandatory text-sm">분과</label>
+                    <select name="category" id="category" class="w-full border rounded p-2 text-sm" required>
+                        <option value="">선택하세요</option>
+                        <option value="디지털 교수학습">디지털 교수학습</option>
+                        <option value="교육용 SW-AI">교육용 SW-AI</option>
+                        <option value="디지털 학교경영">디지털 학교경영</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1 mandatory text-sm">학교급</label>
+                    <select name="schoolLevel" id="schoolLevel" class="w-full border rounded p-2 text-sm" required>
+                        <option value="">선택하세요</option>
+                        <option value="유">유</option>
+                        <option value="초">초</option>
+                        <option value="중">중</option>
+                        <option value="고">고</option>
+                        <option value="특수">특수</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block font-bold mb-1 mandatory text-sm">연구주제(소프트웨어명)</label>
+                    <input type="text" name="topic" id="topic" placeholder="연구주제명 기재"
+                        class="w-full border rounded p-2 text-sm" required>
+                </div>
+                <!-- Vercel 배포 URL 입력 칸 추가 -->
+                <div class="md:col-span-2">
+                    <label class="block font-bold mb-1 text-sm text-blue-700 font-bold">작품 URL (Vercel 배포 주소 등)</label>
+                    <input type="url" name="projectUrl" id="projectUrl" placeholder="https://your-project.vercel.app"
+                        class="w-full border rounded p-2 text-sm border-blue-200 focus:border-blue-500 outline-none">
+                    <p class="text-[10px] text-gray-400 mt-1">* 깃허브 및 버셀 배포 후 생성된 URL을 입력해 주세요.</p>
+                </div>
+            </div>
+
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800">출품자 정보 <span class="text-sm font-normal text-gray-500">(공동
+                        출품 시 추가 버튼 클릭)</span></h3>
+                <button type="button" onclick="addParticipant()" class="btn-add text-sm">+ 출품자 추가</button>
+            </div>
+
+            <div id="participantList">
+                <!-- 동적 생성 구간 -->
+            </div>
+
+            <div class="bg-yellow-50 p-4 rounded-lg mb-6 text-sm border border-yellow-200 mt-6">
+                <div class="mt-2 text-center">
+                    <label class="inline-flex items-center cursor-pointer font-bold">
+                        <input type="checkbox" name="privacyAgreement" id="privacyAgreement" value="O"
+                            class="form-checkbox h-5 w-5 text-blue-600" required>
+                        <span class="ml-2 text-gray-700">개인정보 수집 및 이용에 동의합니다. (미동의 시 참가 불가)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit" id="submitBtn"
+                    class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-lg">신청서
+                    제출/수정하기</button>
+                <button type="button" onclick="resetForm()"
+                    class="px-6 bg-gray-200 font-bold py-3 rounded-lg hover:bg-gray-300">취소</button>
+            </div>
+        </form>
+
+        <!-- 제출 목록 섹션 -->
+        <div class="table-container">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <span>📋 제출된 기록 목록</span>
+                <button onclick="loadRecords()"
+                    class="text-xs bg-gray-100 px-2 py-1 rounded border hover:bg-gray-200 transition">새로고침</button>
+            </h3>
+            <table class="w-full text-xs text-left border-collapse border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700">
+                        <th class="border p-2 text-center w-[40px]">연번</th>
+                        <th class="border p-2 text-center w-[80px]">시군</th>
+                        <th class="border p-2 text-center w-[130px]">분과/학교급</th>
+                        <th class="border p-2 text-center min-w-[200px]">연구주제 / URL</th>
+                        <th class="border p-2 text-center w-[160px]">성명/학교</th>
+                        <th class="border p-2 text-center w-[70px]">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody">
+                    <tr>
+                        <td colspan="6" class="text-center p-8 text-gray-400">데이터를 불러오는 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 커스텀 모달 -->
+        <div id="customModal"
+            class="modal-overlay hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+            <div class="modal-content scale-95 bg-white rounded-xl shadow-2xl p-6 w-80 max-w-sm text-center">
+                <div id="modalIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+                <h3 id="modalTitle" class="text-lg font-bold mb-2"></h3>
+                <p id="modalMessage" class="text-sm text-gray-600 mb-6"></p>
+                <button onclick="closeModal()"
+                    class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition">확인</button>
+            </div>
+        </div>
+
+        <!-- 로딩 -->
+        <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-5 rounded-lg flex flex-col items-center shadow-xl">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
+                <p class="text-sm font-bold">처리 중...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // GAS 연동 설정 (배포된 앱 URL)
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxENYqg9zJwWflU1ry-0-EEA5qxvnxfsemPwsal-h_b7dOPxBJAai7IzReRGFRf7a0N_Q/exec";
+
+        // 에러 방지용 Mock (GAS 외부 실행용 - 로컬 PC 등에서 실행 시 실제 GAS와 통신)
+        if (typeof google === 'undefined') {
+            window.google = {
+                script: {
+                    run: {
+                        withSuccessHandler: function (callback) { this.successHandler = callback; return this; },
+                        withFailureHandler: function (callback) { this.failureHandler = callback; return this; },
+                        getRecords: function () {
+                            fetch(`${GAS_URL}?action=getRecords`)
+                                .then(res => res.json())
+                                .then(data => this.successHandler && this.successHandler(data))
+                                .catch(err => this.failureHandler && this.failureHandler(err));
+                        },
+                        processForm: function (data) {
+                            // POST 요청 시 CORS 문제 해결을 위해 application/x-www-form-urlencoded 또는 text/plain 사용 권장
+                            fetch(GAS_URL, {
+                                method: 'POST',
+                                mode: 'no-cors', // GAS 특성상 리다이렉션 시 CORS 오류가 발생할 수 있어 no-cors 사용 고려
+                                body: JSON.stringify({ action: 'processForm', data: data })
+                            })
+                            .then(() => {
+                                // no-cors 사용 시 응답을 읽을 수 없으므로 성공으로 가정하고 처리 (또는 백엔드에서 JSONP 등 처리 필요)
+                                if (this.successHandler) this.successHandler({ success: true });
+                            })
+                            .catch(err => this.failureHandler && this.failureHandler(err));
+                        },
+                        deleteRecord: function (rowNum) {
+                            fetch(GAS_URL, {
+                                method: 'POST',
+                                mode: 'no-cors',
+                                body: JSON.stringify({ action: 'deleteRecord', rowNum: rowNum })
+                            })
+                            .then(() => {
+                                if (this.successHandler) this.successHandler({ success: true });
+                            })
+                            .catch(err => this.failureHandler && this.failureHandler(err));
+                        }
+                    }
+                }
+            };
+        }
+
+        let currentRecords = [];
+
+        window.onload = function () {
+            addParticipant();
+            loadRecords();
+        };
+
+        function formatPhone(el) {
+            let val = el.value.replace(/\D/g, '');
+            if (val.length > 11) val = val.substring(0, 11);
+            if (val.length > 7) {
+                el.value = val.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+            } else if (val.length > 3) {
+                el.value = val.replace(/(\d{3})(\d{1,4})/, '$1-$2');
+            } else {
+                el.value = val;
+            }
+        }
+
+        function showAlert(title, message, type = 'success') {
+            const modal = document.getElementById('customModal');
+            const icon = document.getElementById('modalIcon');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+
+            if (type === 'success') {
+                icon.innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                icon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 bg-green-100";
+            } else if (type === 'error') {
+                icon.innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                icon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 bg-red-100";
+            } else {
+                icon.innerHTML = '<svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                icon.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 bg-yellow-100";
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.querySelector('.modal-content').classList.remove('scale-95'); }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('customModal');
+            modal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 150);
+        }
+
+        function addParticipant(data = null) {
+            const list = document.getElementById('participantList');
+            const card = document.createElement('div');
+            card.className = 'participant-card';
+            card.innerHTML = `
+                <button type="button" onclick="this.parentElement.remove()" class="btn-remove absolute top-2 right-2">삭제</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-1">
+                        <label class="text-sm text-gray-600 mandatory">시·군</label>
+                        <input type="text" name="city" class="w-full border rounded p-1 text-sm" value="${data ? data.city : ''}" placeholder="예: 경산" required>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="text-sm text-gray-600 mandatory">소속(학교명)</label>
+                        <input type="text" name="schoolName" class="w-full border rounded p-1 text-sm" value="${data ? data.school : ''}" placeholder="예: 하주초등학교" required>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 mandatory">직위</label>
+                        <input type="text" name="position" class="w-full border rounded p-1 text-sm" value="${data ? data.position : ''}" placeholder="교사" required>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 mandatory">성명</label>
+                        <input type="text" name="userName" class="w-full border rounded p-1 text-sm" value="${data ? data.name : ''}" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="text-sm text-gray-600 mandatory">연락처</label>
+                        <input type="tel" name="phone" oninput="formatPhone(this)" class="w-full border rounded p-1 text-sm" placeholder="010-0000-0000" value="${data ? data.phone : ''}" required>
+                    </div>
+                </div>
+            `;
+            list.appendChild(card);
+        }
+
+        function loadRecords() {
+            google.script.run.withSuccessHandler(records => {
+                currentRecords = records || [];
+                const body = document.getElementById('recordsBody');
+                if (currentRecords.length === 0) {
+                    body.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-400">제출된 기록이 없습니다.</td></tr>';
+                    return;
+                }
+                body.innerHTML = currentRecords.map(r => {
+                    const cities = String(r.city).split('\n');
+                    const names = String(r.name).split('\n');
+                    const schools = String(r.school).split('\n');
+
+                    // 성명/학교 결합 HTML 생성
+                    const nameSchoolHTML = names.map((n, i) => `
+                        <div class="mb-1 last:mb-0">
+                            <div class="font-bold text-gray-800 leading-tight">${n}</div>
+                            <div class="text-[10px] text-gray-400 leading-tight">${schools[i] || ''}</div>
+                        </div>
+                    `).join('');
+
+                    // URL 링크 생성
+                    const urlHTML = r.url ? `<div class="mt-1"><a href="${r.url}" target="_blank" class="text-blue-500 hover:underline text-[10px] break-all inline-flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>작품 바로가기</a></div>` : '';
+
+                    return `
+                        <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
+                            <td class="p-2 border text-center text-gray-600 font-bold">${r.id}</td>
+                            <td class="p-2 border text-center text-[11px]">${cities.join('<br>')}</td>
+                            <td class="p-2 border text-center text-[11px]">${r.category} (${r.schoolLevel})</td>
+                            <td class="p-2 border font-semibold text-gray-800 text-[12px]">
+                                ${r.topic}
+                                ${urlHTML}
+                            </td>
+                            <td class="p-2 border">${nameSchoolHTML}</td>
+                            <td class="p-2 border text-center">
+                                <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[11px] mb-1 block w-full hover:underline">수정</button>
+                                <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[11px] block w-full hover:underline">삭제</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }).getRecords();
+        }
+
+        function editMode(rowNum) {
+            const record = currentRecords.find(r => r.rowNum === rowNum);
+            if (!record) return;
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('editRowNum').value = rowNum;
+            document.getElementById('category').value = record.category;
+            document.getElementById('schoolLevel').value = record.schoolLevel;
+            document.getElementById('topic').value = record.topic;
+            document.getElementById('projectUrl').value = record.url || ''; // URL 추가
+            document.getElementById('privacyAgreement').checked = (record.privacy === 'O');
+
+            const list = document.getElementById('participantList');
+            list.innerHTML = '';
+
+            const cities = String(record.city).split('\n');
+            const schools = String(record.school).split('\n');
+            const positions = String(record.position).split('\n');
+            const names = String(record.name).split('\n');
+            const phones = String(record.phone).split('\n');
+
+            for (let i = 0; i < names.length; i++) {
+                addParticipant({
+                    city: cities[i] || '',
+                    school: schools[i] || '',
+                    position: positions[i] || '',
+                    name: names[i] || '',
+                    phone: phones[i] || ''
+                });
+            }
+            document.getElementById('submitBtn').innerText = "기록 수정 완료하기";
+            document.getElementById('submitBtn').classList.replace('bg-blue-600', 'bg-indigo-600');
+        }
+
+        function deleteRow(rowNum) {
+            if (!confirm('해당 신청 기록을 정말로 삭제하시겠습니까?')) return;
+            document.getElementById('loading').classList.remove('hidden');
+            google.script.run.withSuccessHandler(() => {
+                document.getElementById('loading').classList.add('hidden');
+                loadRecords();
+                showAlert('삭제 완료', '기록이 성공적으로 삭제되었습니다.', 'success');
+            }).deleteRecord(rowNum);
+        }
+
+        function resetForm() {
+            document.getElementById('entryForm').reset();
+            document.getElementById('editRowNum').value = '';
+            document.getElementById('participantList').innerHTML = '';
+            document.getElementById('submitBtn').innerText = "신청서 제출/수정하기";
+            document.getElementById('submitBtn').classList.replace('bg-indigo-600', 'bg-blue-600');
+            addParticipant();
+        }
+
+        function handleFormSubmit(form) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const topic = formData.get('topic').trim();
+            const editRowNum = formData.get('editRowNum');
+
+            if (!editRowNum) {
+                const isDuplicate = currentRecords.some(r => r.topic.trim() === topic);
+                if (isDuplicate) {
+                    showAlert('중복된 주제', '이미 같은 주제로 신청된 내역이 존재합니다. 수정을 원하시면 아래 목록에서 해당 행의 수정 버튼을 눌러주세요.', 'warning');
+                    return;
+                }
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+
+            const data = {
+                editRowNum: editRowNum,
+                category: formData.get('category'),
+                schoolLevel: formData.get('schoolLevel'),
+                topic: topic,
+                url: formData.get('projectUrl'), // URL 데이터 수집
+                privacy: formData.get('privacyAgreement') || 'X',
+                participants: []
+            };
+
+            const pCards = document.querySelectorAll('.participant-card');
+            pCards.forEach(card => {
+                data.participants.push({
+                    city: card.querySelector('[name="city"]').value,
+                    school: card.querySelector('[name="schoolName"]').value,
+                    position: card.querySelector('[name="position"]').value,
+                    name: card.querySelector('[name="userName"]').value.trim(),
+                    phone: card.querySelector('[name="phone"]').value
+                });
+            });
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    document.getElementById('loading').classList.add('hidden');
+                    showAlert('완료', editRowNum ? '기록이 성공적으로 수정되었습니다.' : '신청서가 성공적으로 제출되었습니다.', 'success');
+                    resetForm();
+                    loadRecords();
+                })
+                .withFailureHandler(err => {
+                    document.getElementById('loading').classList.add('hidden');
+                    showAlert('오류 발생', '데이터 저장에 실패했습니다: ' + err, 'error');
+                })
+                .processForm(data);
+        }
+    </script>
+</body>
+
+</html>
