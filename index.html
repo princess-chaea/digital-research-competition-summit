@@ -159,12 +159,12 @@
             <table class="w-full text-xs text-left border-collapse border border-gray-200">
                 <thead>
                     <tr class="bg-gray-100 text-gray-700">
-                        <th class="border p-2 text-center w-[40px]">연번</th>
-                        <th class="border p-2 text-center w-[80px]">시군</th>
-                        <th class="border p-2 text-center w-[130px]">분과/학교급</th>
-                        <th class="border p-2 text-center min-w-[200px]">연구주제</th>
-                        <th class="border p-2 text-center w-[160px]">성명/학교</th>
-                        <th class="border p-2 text-center w-[70px]">관리</th>
+                        <th class="border p-1 text-center w-[40px]">연번</th>
+                        <th class="border p-1 text-center w-[70px]">시군</th>
+                        <th class="border p-1 text-center w-[120px]">분과/학교급</th>
+                        <th class="border p-1 text-center min-w-[180px]">연구주제</th>
+                        <th class="border p-1 text-center w-[200px]">성명/학교</th>
+                        <th class="border p-1 text-center w-[60px]">관리</th>
                     </tr>
                 </thead>
                 <tbody id="recordsBody">
@@ -352,25 +352,26 @@
                     const names = String(r.name).split('\n');
                     const schools = String(r.school).split('\n');
 
-                    // 성명/학교 결합 HTML 생성 (콤팩트 형식)
+                    // 성명/학교 결합 HTML 생성 (극도로 콤팩트한 형식)
                     const nameSchoolHTML = names.map((n, i) => `
-                        <div class="text-[11px] text-gray-700 leading-tight mb-0.5 last:mb-0">
-                            <span class="font-bold">${n}</span>
-                            <span class="text-gray-400 text-[10px]">(${schools[i] || ''})</span>
+                        <div class="flex items-center gap-1 text-[11px] leading-none mb-0.5 last:mb-0 whitespace-nowrap">
+                            <span class="font-bold text-gray-800 truncate">${n}</span>
+                            <span class="text-gray-400 text-[10px] truncate">(${schools[i] || ''})</span>
                         </div>
                     `).join('');
+
                     return `
                         <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
-                            <td class="p-2 border text-center text-gray-600 font-bold">${r.id}</td>
-                            <td class="p-2 border text-center text-[11px]">${cities.join('<br>')}</td>
-                            <td class="p-2 border text-center text-[11px]">${r.category} (${r.schoolLevel})</td>
-                            <td class="p-2 border font-semibold text-gray-800 text-[12px]">
+                            <td class="p-1 border text-center text-gray-600 font-bold text-[11px]">${r.id}</td>
+                            <td class="p-1 border text-center text-[10px] leading-tight">${cities.join('<br>')}</td>
+                            <td class="p-1 border text-center text-[10px] leading-tight">${r.category} (${r.schoolLevel})</td>
+                            <td class="p-1 border font-semibold text-gray-800 text-[11px] leading-tight">
                                 ${r.topic}
                             </td>
-                            <td class="p-2 border">${nameSchoolHTML}</td>
-                            <td class="p-2 border text-center">
-                                <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[11px] mb-1 block w-full hover:underline">수정</button>
-                                <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[11px] block w-full hover:underline">삭제</button>
+                            <td class="p-1 border">${nameSchoolHTML}</td>
+                            <td class="p-1 border text-center flex flex-col items-center justify-center min-h-[40px] gap-0.5">
+                                <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[10px] hover:underline">수정</button>
+                                <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[10px] hover:underline">삭제</button>
                             </td>
                         </tr>
                     `;
