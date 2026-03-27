@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 제20회 디지털교육연구대회 신청</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -117,13 +118,6 @@
                     <input type="text" name="topic" id="topic" placeholder="연구주제명 기재"
                         class="w-full border rounded p-2 text-sm" required>
                 </div>
-                <!-- Vercel 배포 URL 입력 칸 추가 -->
-                <div class="md:col-span-2">
-                    <label class="block font-bold mb-1 text-sm text-blue-700 font-bold">작품 URL (Vercel 배포 주소 등)</label>
-                    <input type="url" name="projectUrl" id="projectUrl" placeholder="https://your-project.vercel.app"
-                        class="w-full border rounded p-2 text-sm border-blue-200 focus:border-blue-500 outline-none">
-                    <p class="text-[10px] text-gray-400 mt-1">* 깃허브 및 버셀 배포 후 생성된 URL을 입력해 주세요.</p>
-                </div>
             </div>
 
             <div class="mb-4 flex justify-between items-center">
@@ -168,7 +162,7 @@
                         <th class="border p-2 text-center w-[40px]">연번</th>
                         <th class="border p-2 text-center w-[80px]">시군</th>
                         <th class="border p-2 text-center w-[130px]">분과/학교급</th>
-                        <th class="border p-2 text-center min-w-[200px]">연구주제 / URL</th>
+                        <th class="border p-2 text-center min-w-[200px]">연구주제</th>
                         <th class="border p-2 text-center w-[160px]">성명/학교</th>
                         <th class="border p-2 text-center w-[70px]">관리</th>
                     </tr>
@@ -214,23 +208,39 @@
                         withSuccessHandler: function (callback) { this.successHandler = callback; return this; },
                         withFailureHandler: function (callback) { this.failureHandler = callback; return this; },
                         getRecords: function () {
-                            fetch(`${GAS_URL}?action=getRecords`)
-                                .then(res => res.json())
+                            fetch(`${GAS_URL}?action=getRecords`, {
+                                method: 'GET',
+                                mode: 'cors',
+                                credentials: 'omit',
+                                redirect: 'follow'
+                            })
+                                .then(res => {
+                                    if (!res.ok) throw new Error('Network response was not ok');
+                                    return res.json();
+                                })
                                 .then(data => this.successHandler && this.successHandler(data))
-                                .catch(err => this.failureHandler && this.failureHandler(err));
+                                .catch(err => {
+                                    console.error('GAS Fetch Error (getRecords):', err);
+                                    if (this.failureHandler) this.failureHandler(err);
+                                });
                         },
                         processForm: function (data) {
-                            // POST 요청 시 CORS 문제 해결을 위해 application/x-www-form-urlencoded 또는 text/plain 사용 권장
+                            // GAS POST의 경우 no-cors가 가장 안전하나 응답을 읽을 수 없음. 
+                            // CORS 설정이 된 경우를 위해 시도
                             fetch(GAS_URL, {
                                 method: 'POST',
-                                mode: 'no-cors', // GAS 특성상 리다이렉션 시 CORS 오류가 발생할 수 있어 no-cors 사용 고려
-                                body: JSON.stringify({ action: 'processForm', data: data })
+                                mode: 'no-cors', 
+                                cache: 'no-cache',
+                                body: JSON.stringify({ action: 'processForm', data: data }),
+                                headers: { 'Content-Type': 'text/plain' } // preflight 피하기 위해 text/plain 사용
                             })
                             .then(() => {
-                                // no-cors 사용 시 응답을 읽을 수 없으므로 성공으로 가정하고 처리 (또는 백엔드에서 JSONP 등 처리 필요)
                                 if (this.successHandler) this.successHandler({ success: true });
                             })
-                            .catch(err => this.failureHandler && this.failureHandler(err));
+                            .catch(err => {
+                                console.error('GAS Fetch Error (processForm):', err);
+                                if (this.failureHandler) this.failureHandler(err);
+                            });
                         },
                         deleteRecord: function (rowNum) {
                             fetch(GAS_URL, {
@@ -349,10 +359,6 @@
                             <div class="text-[10px] text-gray-400 leading-tight">${schools[i] || ''}</div>
                         </div>
                     `).join('');
-
-                    // URL 링크 생성
-                    const urlHTML = r.url ? `<div class="mt-1"><a href="${r.url}" target="_blank" class="text-blue-500 hover:underline text-[10px] break-all inline-flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>작품 바로가기</a></div>` : '';
-
                     return `
                         <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
                             <td class="p-2 border text-center text-gray-600 font-bold">${r.id}</td>
@@ -360,7 +366,6 @@
                             <td class="p-2 border text-center text-[11px]">${r.category} (${r.schoolLevel})</td>
                             <td class="p-2 border font-semibold text-gray-800 text-[12px]">
                                 ${r.topic}
-                                ${urlHTML}
                             </td>
                             <td class="p-2 border">${nameSchoolHTML}</td>
                             <td class="p-2 border text-center">
@@ -382,7 +387,6 @@
             document.getElementById('category').value = record.category;
             document.getElementById('schoolLevel').value = record.schoolLevel;
             document.getElementById('topic').value = record.topic;
-            document.getElementById('projectUrl').value = record.url || ''; // URL 추가
             document.getElementById('privacyAgreement').checked = (record.privacy === 'O');
 
             const list = document.getElementById('participantList');
@@ -448,7 +452,6 @@
                 category: formData.get('category'),
                 schoolLevel: formData.get('schoolLevel'),
                 topic: topic,
-                url: formData.get('projectUrl'), // URL 데이터 수집
                 privacy: formData.get('privacyAgreement') || 'X',
                 participants: []
             };
