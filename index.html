@@ -352,11 +352,11 @@
                     const names = String(r.name).split('\n');
                     const schools = String(r.school).split('\n');
 
-                    // 성명/학교 결합 HTML 생성
+                    // 성명/학교 결합 HTML 생성 (콤팩트 형식)
                     const nameSchoolHTML = names.map((n, i) => `
-                        <div class="mb-1 last:mb-0">
-                            <div class="font-bold text-gray-800 leading-tight">${n}</div>
-                            <div class="text-[10px] text-gray-400 leading-tight">${schools[i] || ''}</div>
+                        <div class="text-[11px] text-gray-700 leading-tight mb-0.5 last:mb-0">
+                            <span class="font-bold">${n}</span>
+                            <span class="text-gray-400 text-[10px]">(${schools[i] || ''})</span>
                         </div>
                     `).join('');
                     return `
