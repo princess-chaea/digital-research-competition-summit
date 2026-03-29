@@ -89,7 +89,7 @@
             ※ 2026. 4. 22.(수)까지 입력 완료해 주세요.
         </p>
 
-        <form id="entryForm" onsubmit="handleFormSubmit(this)">
+        <form id="entryForm" onsubmit="handleFormSubmit(event)">
             <input type="hidden" name="editRowNum" id="editRowNum">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -205,9 +205,19 @@
             window.google = {
                 script: {
                     run: {
-                        withSuccessHandler: function (callback) { this.successHandler = callback; return this; },
-                        withFailureHandler: function (callback) { this.failureHandler = callback; return this; },
+                        withSuccessHandler: function (callback) {
+                            const newRun = Object.assign({}, this);
+                            newRun.successHandler = callback;
+                            return newRun;
+                        },
+                        withFailureHandler: function (callback) {
+                            const newRun = Object.assign({}, this);
+                            newRun.failureHandler = callback;
+                            return newRun;
+                        },
                         getRecords: function () {
+                            const handler = this.successHandler;
+                            const failHandler = this.failureHandler;
                             fetch(`${GAS_URL}?action=getRecords`, {
                                 method: 'GET',
                                 mode: 'cors',
@@ -218,40 +228,45 @@
                                     if (!res.ok) throw new Error('Network response was not ok');
                                     return res.json();
                                 })
-                                .then(data => this.successHandler && this.successHandler(data))
+                                .then(data => handler && handler(data))
                                 .catch(err => {
                                     console.error('GAS Fetch Error (getRecords):', err);
-                                    if (this.failureHandler) this.failureHandler(err);
+                                    if (failHandler) failHandler(err);
                                 });
                         },
                         processForm: function (data) {
-                            // GAS POST의 경우 no-cors가 가장 안전하나 응답을 읽을 수 없음. 
-                            // CORS 설정이 된 경우를 위해 시도
+                            const handler = this.successHandler;
+                            const failHandler = this.failureHandler;
                             fetch(GAS_URL, {
                                 method: 'POST',
-                                mode: 'no-cors', 
+                                mode: 'no-cors',
                                 cache: 'no-cache',
                                 body: JSON.stringify({ action: 'processForm', data: data }),
-                                headers: { 'Content-Type': 'text/plain' } // preflight 피하기 위해 text/plain 사용
+                                headers: { 'Content-Type': 'text/plain' }
                             })
                             .then(() => {
-                                if (this.successHandler) this.successHandler({ success: true });
+                                if (handler) handler({ success: true });
                             })
                             .catch(err => {
                                 console.error('GAS Fetch Error (processForm):', err);
-                                if (this.failureHandler) this.failureHandler(err);
+                                if (failHandler) failHandler(err);
                             });
                         },
                         deleteRecord: function (rowNum) {
+                            const handler = this.successHandler;
+                            const failHandler = this.failureHandler;
                             fetch(GAS_URL, {
                                 method: 'POST',
                                 mode: 'no-cors',
                                 body: JSON.stringify({ action: 'deleteRecord', rowNum: rowNum })
                             })
                             .then(() => {
-                                if (this.successHandler) this.successHandler({ success: true });
+                                if (handler) handler({ success: true });
                             })
-                            .catch(err => this.failureHandler && this.failureHandler(err));
+                            .catch(err => {
+                                console.error('GAS Fetch Error (deleteRecord):', err);
+                                if (failHandler) failHandler(err);
+                            });
                         }
                     }
                 }
@@ -340,45 +355,52 @@
         }
 
         function loadRecords() {
-            google.script.run.withSuccessHandler(records => {
-                currentRecords = records || [];
-                const body = document.getElementById('recordsBody');
-                if (currentRecords.length === 0) {
-                    body.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-400">제출된 기록이 없습니다.</td></tr>';
-                    return;
-                }
-                body.innerHTML = currentRecords.map(r => {
-                    const cities = String(r.city).split('\n');
-                    const names = String(r.name).split('\n');
-                    const schools = String(r.school).split('\n');
+            google.script.run
+                .withSuccessHandler(records => {
+                    currentRecords = records || [];
+                    const body = document.getElementById('recordsBody');
+                    if (currentRecords.length === 0) {
+                        body.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-400">제출된 기록이 없습니다.</td></tr>';
+                        return;
+                    }
+                    body.innerHTML = currentRecords.map(r => {
+                        const cities = String(r.city).split('\n');
+                        const names = String(r.name).split('\n');
+                        const schools = String(r.school).split('\n');
 
-                    // 성명/학교 결합 HTML 생성 (극도로 콤팩트한 형식)
-                    const nameSchoolHTML = names.map((n, i) => `
-                        <div class="flex items-center gap-1 text-[11px] leading-none mb-0.5 last:mb-0 whitespace-nowrap">
-                            <span class="font-bold text-gray-800 truncate">${n}</span>
-                            <span class="text-gray-400 text-[10px] truncate">(${schools[i] || ''})</span>
-                        </div>
-                    `).join('');
+                        // 성명/학교 결합 HTML 생성 (극도로 콤팩트한 형식)
+                        const nameSchoolHTML = names.map((n, i) => `
+                            <div class="flex items-center gap-1 text-[11px] leading-none mb-0.5 last:mb-0 whitespace-nowrap">
+                                <span class="font-bold text-gray-800 truncate">${n}</span>
+                                <span class="text-gray-400 text-[10px] truncate">(${schools[i] || ''})</span>
+                            </div>
+                        `).join('');
 
-                    return `
-                        <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
-                            <td class="px-1 py-0.5 border text-center text-gray-600 font-bold text-[11px]">${r.id}</td>
-                            <td class="px-1 py-0.5 border text-center text-[10px] leading-[1] text-gray-500">${cities.map(c => `<div>${c}</div>`).join('')}</td>
-                            <td class="px-1 py-0.5 border text-center text-[10px] leading-[1]">${r.category}<br>(${r.schoolLevel})</td>
-                            <td class="px-1 py-0.5 border font-semibold text-gray-800 text-[11px] leading-tight">
-                                ${r.topic}
-                            </td>
-                            <td class="px-1 py-0.5 border">${nameSchoolHTML}</td>
-                            <td class="px-1 py-0.5 border text-center">
-                                <div class="flex flex-col items-center justify-center gap-0.5">
-                                    <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[10px] hover:underline leading-none">수정</button>
-                                    <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[10px] hover:underline leading-none">삭제</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            }).getRecords();
+                        return `
+                            <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
+                                <td class="px-1 py-0.5 border text-center text-gray-600 font-bold text-[11px]">${r.id}</td>
+                                <td class="px-1 py-0.5 border text-center text-[10px] leading-[1] text-gray-500">${cities.map(c => `<div>${c}</div>`).join('')}</td>
+                                <td class="px-1 py-0.5 border text-center text-[10px] leading-[1]">${r.category}<br>(${r.schoolLevel})</td>
+                                <td class="px-1 py-0.5 border font-semibold text-gray-800 text-[11px] leading-tight">
+                                    ${r.topic}
+                                </td>
+                                <td class="px-1 py-0.5 border">${nameSchoolHTML}</td>
+                                <td class="px-1 py-0.5 border text-center">
+                                    <div class="flex flex-col items-center justify-center gap-0.5">
+                                        <button onclick="editMode(${r.rowNum})" class="text-blue-500 font-bold text-[10px] hover:underline leading-none">수정</button>
+                                        <button onclick="deleteRow(${r.rowNum})" class="text-red-400 text-[10px] hover:underline leading-none">삭제</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .withFailureHandler(err => {
+                    console.error('Failed to load records:', err);
+                    const body = document.getElementById('recordsBody');
+                    body.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-red-400">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>';
+                })
+                .getRecords();
         }
 
         function editMode(rowNum) {
@@ -411,17 +433,24 @@
                 });
             }
             document.getElementById('submitBtn').innerText = "기록 수정 완료하기";
-            document.getElementById('submitBtn').classList.replace('bg-blue-600', 'bg-indigo-600');
+            document.getElementById('submitBtn').classList.remove('bg-blue-600');
+            document.getElementById('submitBtn').classList.add('bg-indigo-600');
         }
 
         function deleteRow(rowNum) {
             if (!confirm('해당 신청 기록을 정말로 삭제하시겠습니까?')) return;
             document.getElementById('loading').classList.remove('hidden');
-            google.script.run.withSuccessHandler(() => {
-                document.getElementById('loading').classList.add('hidden');
-                loadRecords();
-                showAlert('삭제 완료', '기록이 성공적으로 삭제되었습니다.', 'success');
-            }).deleteRecord(rowNum);
+            google.script.run
+                .withSuccessHandler(() => {
+                    document.getElementById('loading').classList.add('hidden');
+                    loadRecords();
+                    showAlert('삭제 완료', '기록이 성공적으로 삭제되었습니다.', 'success');
+                })
+                .withFailureHandler(err => {
+                    document.getElementById('loading').classList.add('hidden');
+                    showAlert('삭제 실패', '기록 삭제 중 오류가 발생했습니다: ' + err, 'error');
+                })
+                .deleteRecord(rowNum);
         }
 
         function resetForm() {
@@ -429,11 +458,13 @@
             document.getElementById('editRowNum').value = '';
             document.getElementById('participantList').innerHTML = '';
             document.getElementById('submitBtn').innerText = "신청서 제출/수정하기";
-            document.getElementById('submitBtn').classList.replace('bg-indigo-600', 'bg-blue-600');
+            document.getElementById('submitBtn').classList.remove('bg-indigo-600');
+            document.getElementById('submitBtn').classList.add('bg-blue-600');
             addParticipant();
         }
 
-        function handleFormSubmit(form) {
+        function handleFormSubmit(event) {
+            const form = event.target;
             event.preventDefault();
 
             const formData = new FormData(form);
